@@ -5,6 +5,9 @@ After=network.target
 [Service]
 User=deluge
 Group={{ global_rw_group }}
+Environment=PYTHONPATH=/opt/libtorrent/lib/python3.7/site-packages/
+Environment=LD_LIBRARY_PATH=/opt/libtorrent/lib/
+
 ExecStart=/usr/local/bin/deluged -d -L error
 Restart=on-failure
 TimeoutStopSec=300

@@ -1,0 +1,51 @@
+---
+- name: Add src repo
+  apt_repository:
+    repo: deb-src http://ftp.debian.org/debian buster main contrib
+    state: present
+
+- name: Update cache
+  apt:
+    update_cache: true
+
+- name: Install deps
+  shell: apt-get build-dep libtorrent-rasterbar
+
+- name: Download and extract libtorrent tarball
+  unarchive:
+    src: "https://github.com/arvidn/libtorrent/releases/download/libtorrent-{{ libtorrent_ver }}/libtorrent-rasterbar-{{ libtorrent_ver }}.tar.gz"
+    remote_src: true
+    dest: /opt
+    creates: "/opt/libtorrent-rasterbar-{{ libtorrent_ver }}"
+  register: download
+
+- name: Configure libtorrent
+  shell: |
+    export PYTHON=/usr/bin/python3
+    ./configure --enable-python-binding --with-libiconv --prefix=/opt/libtorrent-{{ libtorrent_ver }}
+  args:
+    chdir: "/opt/libtorrent-rasterbar-{{ libtorrent_ver }}"
+  when: download.changed
+
+- name: Make libtorrent
+  shell: make -j$(nproc)
+  args:
+    chdir: "/opt/libtorrent-rasterbar-{{ libtorrent_ver }}"
+  when: download.changed
+
+- name: Make install libtorrent
+  shell: |
+    make install
+    ldconfig
+  args:
+    chdir: "/opt/libtorrent-rasterbar-{{ libtorrent_ver }}"
+  when: download.changed
+
+- name: Link new version
+  file:
+    src: "/opt/libtorrent-{{ libtorrent_ver }}"
+    dest: "/opt/libtorrent"
+    state: link
+    force: yes
+  when: download.changed
+
