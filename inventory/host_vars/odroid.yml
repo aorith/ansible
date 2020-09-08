@@ -1,0 +1,19 @@
+main_url: "{{ vault_subdomain }}.{{ vault_dns_domain }}"
+http_user: www-data
+data_path: "/media/datos"
+
+# unused
+fail2ban_ignore_apachecustom: "{{ vault_fail2ban_ignore_apachecustom }}"
+
+# syncthing
+syncthing_path: "/media/datos/Syncthing"
+syncthing_user: "syncthing"
+syncthing_uid: "1105"
+syncthing_group: "{{ global_rw_group }}"
+syncthing_main_port: "8080"
+syncthing_webui_port: "8384"
+syncthing_audit: "yes"
+syncthing_audit_path: "/tmp/syncthing_audit.log"
+
+# snmpd
+device_location: "Under The TV"

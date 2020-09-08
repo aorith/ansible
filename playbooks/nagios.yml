@@ -1,0 +1,13 @@
+---
+- name: configure system
+  become: True
+  hosts: nagios
+  remote_user: "{{ USER }}"
+  roles:
+#   - common
+#   - nrpe
+#   - snmp
+#   - nagios
+#   - influxdb
+#   - grafana
+    - ncpa

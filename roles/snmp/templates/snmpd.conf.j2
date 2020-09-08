@@ -1,0 +1,32 @@
+com2sec local 127.0.0.1 mono
+com2sec redlocal 192.168.0.0/16 mono
+#com2sec internet "direccion_ip" mono
+
+group MyRWGroup v1 local
+group MyRWGroup v2c local
+group MyRWGroup usm local
+
+group MyROGroup v1 redlocal
+group MyROGroup v2c redlocal
+group MyROGroup usm redlocal
+
+#group MyROGroup v1 internet
+#group MyROGroup v2c internet
+#group MyROGroup usm internet
+
+view all included .1 80
+
+access MyROGroup "" any noauth exact all none none
+access MyRWGroup "" any noauth exact all all all
+
+syslocation {{ device_location | default('configura_el_device_location_en_ansible') }}
+syscontact {{ email }}
+
+#includeAllDisks
+# graph processes
+
+# at least one syncthing process running
+proc syncthing
+
+extend .1.3.6.1.4.1.2021.7890.1 temperature /opt/snmp/bin/temperature.sh
+

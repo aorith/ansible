@@ -1,0 +1,30 @@
+main_url: "{{ vault_subdomain_joplin }}.{{ vault_dns_domain }}"
+http_user: www-data
+email: "{{ vault_email }}"
+
+# webdav
+htpasswd_path: "/etc/apache2/.htwebdav"
+webdav_path: "/WebDAV/Joplin"
+webdav_davlockdb_path: "/var/lib/dav"
+webdav_username: "{{ vault_webdav_username }}"
+webdav_password: "{{ vault_webdav_password }}"
+
+# syncthing
+syncthing_path: "/Syncthing"
+syncthing_user: "syncthing"
+syncthing_uid: "1105"
+syncthing_group: "{{ global_rw_group }}"
+syncthing_main_port: "8080"
+syncthing_webui_port: "8384"
+syncthing_audit: "yes"
+syncthing_audit_path: "/tmp/syncthing_audit.log"
+GITHOME: "/home/{{ syncthing_user }}/githome"
+
+# radicale
+radicale_user: "radicale"
+radicale_uid: "1170"
+radicale_group: "{{ global_rw_group }}"
+radicale_collections_path: "/Syncthing/Radicale/collections"
+
+# snmpd
+device_location: "Linux Container en PVE"

@@ -1,0 +1,81 @@
+---
+- name: install fail2ban
+  package:
+    name:
+      - fail2ban
+    state: latest
+
+- name: create temp dir
+  tempfile:
+    state: directory
+    suffix: temp
+  register: tempdir1
+
+- name:
+  debug:
+    msg: "{{ tempdir1.path }}"
+
+- name: copy host specific filter rules to host
+  synchronize:
+    src: "filter.d.{{ ansible_hostname }}"
+    dest: "{{ tempdir1.path }}"
+    delete: yes
+    recursive: yes
+
+- name: copy global filter rules to host
+  synchronize:
+    src: "filter.d"
+    dest: "{{ tempdir1.path }}"
+    delete: no
+    recursive: yes
+
+- name: register copied files
+  find:
+    paths: "{{ tempdir1.path }}"
+    file_type: "file"
+    patterns: "*"
+    recurse: yes
+  register: find_result
+
+#- name: replace vars
+  #replace:
+  #  path: "{{ item.path }}"
+  #  regexp: '<IGNORE_REGEX>'
+  #  replace: "{{ fail2ban_ignore_apachecustom }}"
+  #with_items: "{{ find_result.files }}"
+
+- name: copy fail2ban filter files (already on remote)
+  copy:
+    src: "{{ item.path }}"
+    dest: "/etc/fail2ban/filter.d/{{ item.path | basename }}"
+    remote_src: yes
+    owner: root
+    group: root
+    mode: '0644'
+  with_items: "{{ find_result.files }}"
+
+- name: copy fail2ban jail.local
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+  with_items:
+    - { src: "jail.local.{{ ansible_hostname }}", dest: '/etc/fail2ban/jail.local' }
+
+- name: replace vars
+  replace:
+    path: "/etc/fail2ban/jail.local"
+    regexp: '<MAIN_URL>'
+    replace: "{{ main_url }}"
+
+- name: restart fail2ban
+  service:
+    name: fail2ban
+    state: restarted
+
+- name: clean tempdir
+  file:
+    path: "{{ tempdir1.path }}"
+    state: absent

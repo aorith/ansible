@@ -1,0 +1,39 @@
+- name: Install pacman packages
+  become: True
+  pacman:
+    name: "{{ pacman_packages | default([]) }}"
+    update_cache: yes
+    state: present
+  when: ansible_distribution == "Archlinux"
+
+- name: Install pip packages
+  become: True
+  pip:
+    name: "{{ item }}"
+  with_items: "{{ pip_packages | default([]) }}"
+
+- name: Install aur packages
+  aur:
+    name: "{{ item }}"
+  with_items: "{{ aur_packages | default([]) }}"
+  when: ansible_distribution == "Archlinux"
+
+- name: Copy fishlogin
+  become: True
+  copy:
+    src: fishlogin
+    dest: /usr/local/bin/fishlogin
+    mode: '0755'
+
+- name: Add fishlogin to shells
+  become: True
+  lineinfile:
+    path: /etc/shells
+    line: /usr/local/bin/fishlogin
+
+- name: Set new login shell
+  become: True
+  user:
+    name: aorith
+    shell: /usr/local/bin/fishlogin
+

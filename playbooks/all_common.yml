@@ -1,0 +1,9 @@
+---
+- name: configure system
+  become: True
+  hosts: autoupdate
+  remote_user: "{{ USER }}"
+  roles:
+    - common
+    - snmp
+    - ncpa

@@ -1,0 +1,72 @@
+---
+- name: System details
+  debug:
+    msg: "{{ item }}"
+  with_items:
+    - "{{ ansible_distribution }}"
+    - "{{ ansible_distribution_version }}"
+    - "{{ ansible_distribution_major_version }}"
+
+- name: install apache2
+  package:
+    name:
+      - apache2
+      - apache2-utils
+    state: latest
+
+- name: configure apache2 mods
+  command: "{{ item }}"
+  with_items:
+    - a2enmod ssl
+    - a2enmod rewrite
+    - a2enmod headers
+
+- name: configure apache2 envvars
+  lineinfile:
+    path: /etc/apache2/envvars
+    regexp: '^umask'
+    line: umask 0002
+
+- name: copy apache2 site files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+    force: True
+  with_items:
+    - { src: 'sites-available/main.conf', dest: '/etc/apache2/sites-available/main.conf' }
+    - { src: 'sites-available/main-ssl.conf', dest: '/etc/apache2/sites-available/main-ssl.conf' }
+
+- name: gather required files for sites-available
+  find:
+    paths: "/etc/apache2/sites-available"
+    patterns: "*"
+  register: sitecfg
+
+- name: variable substitution
+  replace:
+    path: "{{ item.path }}"
+    regexp: '<MAIN_URL>'
+    replace: "{{ main_url }}"
+  with_items: "{{ sitecfg.files }}"
+
+- name: count enabled sites
+  shell: "ls -1 /etc/apache2/sites-enabled | wc -l"
+  register: dir_files
+
+- name: clean apache2 sites that are enabled
+  command: a2dissite *
+  when: dir_files.stdout|int > 0
+
+- name: enable apache2 sites
+  command: "{{ item }}"
+  with_items:
+    - a2ensite main
+    - a2ensite main-ssl
+
+- name: restart apache2
+  service:
+    name: apache2
+    state: restarted

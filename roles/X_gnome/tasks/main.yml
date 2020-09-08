@@ -1,0 +1,29 @@
+---
+- name: install packages
+  become: true
+  package:
+    name: "{{ item.name }}"
+    state: latest
+  with_items: "{{ gnome_packages | default([]) }}"
+
+- name: Get default terminal profile
+  command: bash -c "_profile=$(gsettings get org.gnome.Terminal.ProfilesList default); echo ${_profile:1:-1}"
+  register: task_profile
+  changed_when: false
+
+- name: Set fact for terminal profile
+  set_fact:
+    terminal_profile: "{{ task_profile.stdout }}"
+
+- name: Check key existence
+  dconf:
+    key: "{{ item.key }}"
+    state: read
+  with_items: "{{ gnome_preferences | default([]) }}"
+
+- name: Set preferences
+  dconf:
+    key: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+  with_items: "{{ gnome_preferences | default([]) }}"

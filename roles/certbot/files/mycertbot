@@ -1,0 +1,2 @@
+5 4 * * 0 root /usr/bin/certbot renew --apache >/dev/null 2>&1
+

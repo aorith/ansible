@@ -1,0 +1,8 @@
+---
+- name:
+  become: True
+  hosts: mithlond
+  remote_user: "{{ USER }}"
+  roles:
+#   - { role: common }
+    - { role: deluge }

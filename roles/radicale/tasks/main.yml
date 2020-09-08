@@ -1,0 +1,39 @@
+---
+- name: add radicale user
+  user:
+    name: "{{ radicale_user}}"
+    shell: /usr/sbin/nologin
+    uid: "{{ radicale_uid }}"
+    group: "{{ global_rw_group }}"
+
+- name: install radicale
+  pip:
+    name: radicale
+    executable: /usr/bin/pip3
+
+- name: install radicale systemd unit
+  template:
+    src: radicale.service.j2
+    dest: /lib/systemd/system/radicale.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: radicale_service
+
+- name: copy radicale config
+  template:
+    src: config.ini.j2
+    dest: /Syncthing/Radicale/config.ini
+    owner: "{{ radicale_user }}"
+    group: "{{ global_rw_group }}"
+    mode: '0775'
+  register: radicale_config
+
+- name: start radicale
+  service:
+    name: radicale.service
+    daemon_reload: yes
+    state: restarted
+  when: radicale_service.changed or radicale_config.changed
+
+

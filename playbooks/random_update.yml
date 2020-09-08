@@ -1,0 +1,7 @@
+---
+- name: configure system
+  become: True
+  hosts: "{{ (groups['autoupdate'] | random) }}"
+  remote_user: "{{ USER }}"
+  roles:
+    - autoupdate

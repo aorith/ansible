@@ -1,0 +1,7 @@
+---
+- name: "Deploying..."
+  become: False
+  hosts: arkadia ansible_connection=local
+  roles:
+    - X_fedora
+    - X_xfce4

@@ -1,0 +1,37 @@
+- name: Actualizar cache y paquetes básicos
+  become: True
+  dnf:
+    name:
+      - '@Development Tools'
+      - python-pip
+      - python3-pip
+      - wget
+      - curl
+      - bc
+      - git
+      - tree
+      - htop
+      - neovim
+      - stow
+      - python3-pkgconfig
+      - python3-setuptools
+      - python3-devel
+      - python-devel
+      - python-setuptools
+      - bash-completion
+      - fira-code-fonts.noarch
+      - arc-theme.noarch
+      - jq
+      - ShellCheck
+      - node
+      - nodejs
+      - dmenu
+    state: latest
+  when: ansible_distribution in ["Fedora", "Centos"]
+
+- name: Install pip packages
+  become: True
+  pip:
+    name:
+      - psutil
+      - pylint

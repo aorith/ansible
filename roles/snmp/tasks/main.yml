@@ -1,0 +1,40 @@
+---
+- name: Install snmp and snmpd
+  apt:
+    name:
+      - snmp
+      - snmpd
+    state: latest
+
+- name: Create folder for snmp scripts
+  file:
+    path: /opt/snmp/bin
+    state: directory
+    owner: root
+    group: root
+    mode: 0775
+
+- name: Copy snmp scripts
+  synchronize:
+    src: opt/snmp/bin/
+    dest: /opt/snmp/bin
+    owner: no
+    group: no
+    perms: yes
+    delete: yes
+  notify:
+    - reinicia snmpd
+
+- name: Copy snmpd config
+  template:
+    src: snmpd.conf.j2
+    dest: /etc/snmp/snmpd.conf
+  notify:
+    - reinicia snmpd
+
+- name: Ensure snmpd is running
+  systemd:
+    name: snmpd
+    state: started
+    enabled: yes
+

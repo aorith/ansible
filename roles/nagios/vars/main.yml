@@ -1,0 +1,14 @@
+---
+## NAGIOS CORE
+nagios_ver: 4.4.6
+nagios_targz_url: "https://github.com/NagiosEnterprises/nagioscore/releases/download/nagios-{{ nagios_ver }}/nagios-{{ nagios_ver }}.tar.gz"
+
+nagios_basedir: /opt/nagios
+nagios_install_dir: "/opt/nagios-{{ nagios_ver }}"
+nagios_src_dir: "/opt/nagios-{{ nagios_ver }}/nagios-{{ nagios_ver }}"
+
+## NAGIOS PLUGINS
+nagios_plugins_ver: 2.3.3
+nagios_plugins_targz_url: "https://nagios-plugins.org/download/nagios-plugins-{{ nagios_plugins_ver }}.tar.gz"
+nagios_plugins_src_dir: "/opt/nagios-{{ nagios_ver }}/nagios-plugins-{{ nagios_plugins_ver }}"
+

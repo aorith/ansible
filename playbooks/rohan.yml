@@ -1,0 +1,8 @@
+---
+- name: configure system
+  become: True
+  hosts: rohan
+  remote_user: "{{ USER }}"
+  roles:
+    - common
+    - snmp

@@ -1,0 +1,4 @@
+sxhkd_ver: "0.6.1"
+sxhkd_url: "https://github.com/baskerville/sxhkd/archive/{{ sxhkd_ver }}.tar.gz"
+sxhkd_install_dir: "/opt/sxhkd-{{ sxhkd_ver }}"
+sxhkd_src_dir: "{{ sxhkd_install_dir }}/sxhkd-{{ sxhkd_ver }}"

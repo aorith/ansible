@@ -1,0 +1,36 @@
+---
+- name: install required packages
+  package:
+    name:
+      - certbot
+      - python3-certbot-apache
+    state: latest
+
+- name: ensure apache2 is stopped
+  service:
+    name: apache2
+    state: stopped
+
+- name: install certificate
+  command: certbot certonly -n --agree-tos -m "{{ email }}" --standalone -d "{{ main_url }}"
+  args:
+    creates: "/etc/letsencrypt/live/{{ main_url }}/fullchain.pem"
+
+- name: copy letsencrypt config options file
+  copy:
+    src: "options-ssl-apache.conf"
+    dest: "/etc/letsencrypt/options-ssl-apache.conf"
+    owner: root
+    group: root
+    mode: '0644'
+    force: True
+
+- name: install crontab job for certbot
+  copy:
+    src: "mycertbot"
+    dest: "/etc/cron.d/mycertbot"
+    owner: root
+    group: root
+    mode: '0644'
+    force: True
+

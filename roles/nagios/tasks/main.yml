@@ -1,0 +1,267 @@
+- name: Nagios required packages
+  apt:
+    name:
+      - wget
+      - curl
+      - build-essential
+      - libc6
+      - unzip
+      - openssl
+      - libssl-dev
+      - apache2
+      - apache2-utils
+      - php
+      - libapache2-mod-php
+      - php-gd
+      - libgd-dev
+      - git
+
+- name: install pexpect (python module requisite)
+  pip:
+    name: pexpect
+
+- name: Crear directorio de destino
+  file:
+    path: "{{ nagios_install_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: "Descargar la versión configurada de Nagios Core => {{ nagios_ver }}"
+  get_url:
+    url: "{{ nagios_targz_url }}"
+    dest: "{{ nagios_install_dir }}/nagios-{{ nagios_ver }}.tar.gz"
+  register: nagios_download
+
+- name: Descomprimir el tarball de Nagios Core
+  unarchive:
+    remote_src: yes
+    src: "{{ nagios_install_dir }}/nagios-{{ nagios_ver }}.tar.gz"
+    dest: "{{ nagios_install_dir }}"
+  when: nagios_download.changed
+  register: nagios_archive
+
+- name: "Creamos symlink pronto para usar como prefix {{ nagios_basedir }} directamente"
+  file:
+    src: "{{ nagios_install_dir }}"
+    dest: "{{ nagios_basedir }}"
+    state: link
+
+- name: "Compilar Nagios Core el prefix apunta a {{ nagios_basedir }}"
+  command: >
+    ./configure --prefix={{ nagios_basedir }}
+    --with-httpd-conf=/etc/apache2/sites-enabled
+  args:
+    chdir: "{{ nagios_src_dir }}"
+  register: nagios_configure
+  when: nagios_archive.changed
+
+- name: "Usuario/Grupo para Nagios"
+  command: "{{ item }}"
+  with_items:
+  - make install-groups-users
+  - usermod -a -G nagios www-data
+  - /sbin/mkhomedir_helper nagios
+  args:
+    chdir: "{{ nagios_src_dir }}"
+  when: nagios_configure.changed
+
+- name: "Make all"
+  command: "{{ item }}"
+  with_items:
+  - make all
+  args:
+    chdir: "{{ nagios_src_dir }}"
+  when: nagios_configure.changed
+
+- name: "Make install"
+  command: "{{ item }}"
+  with_items:
+  - make install
+  args:
+    chdir: "{{ nagios_src_dir }}"
+  when: nagios_configure.changed
+
+- name: "Resto de comandos para finalizar la instalacion de Nagios"
+  command: "{{ item }}"
+  with_items:
+  - make install-daemoninit
+  - make install-commandmode
+  - make install-config
+  - make install-webconf
+  - a2enmod rewrite
+  - a2enmod cgi
+  args:
+    chdir: "{{ nagios_src_dir }}"
+  when: nagios_configure.changed
+
+- name: Comprobamos si existen los credenciales htpasswd
+  stat:
+    path: "{{ nagios_install_dir }}/etc/htpasswd.users"
+  register: stat_result
+
+- name: configuramos los credenciales
+  expect:
+    command: htpasswd -c "{{ nagios_install_dir }}/etc/htpasswd.users" admin
+    responses:
+      (?i)password: 1234
+  when: not stat_result.stat.exists
+
+- name: "Descargar la versión configurada de Nagios Plugins => {{ nagios_plugins_ver }}"
+  get_url:
+    url: "{{ nagios_plugins_targz_url }}"
+    dest: "{{ nagios_install_dir }}/nagios-plugins-{{ nagios_plugins_ver }}.tar.gz"
+  register: nagios_plugins_download
+
+- name: Descomprimir el tarball de Nagios Plugins
+  unarchive:
+    remote_src: yes
+    src: "{{ nagios_install_dir }}/nagios-plugins-{{ nagios_plugins_ver }}.tar.gz"
+    dest: "{{ nagios_install_dir }}"
+  when: nagios_plugins_download.changed
+  register: nagios_plugins_archive
+
+- name: "Compilar Nagios Plugins el prefix apunta a {{ nagios_basedir }}"
+  command: >
+    ./configure --prefix={{ nagios_basedir }}
+    --with-nagios-user=nagios
+    --with-nagios-group=nagios
+  args:
+    chdir: "{{ nagios_plugins_src_dir }}"
+  register: nagios_plugins_configure
+  when: nagios_plugins_archive.changed
+
+- name: "Make y Make install para Nagios Plugins"
+  command: "{{ item }}"
+  with_items:
+  - make
+  - make install
+  args:
+    chdir: "{{ nagios_plugins_src_dir }}"
+  when: nagios_plugins_configure.changed
+
+- name: Arreglamos los problemas con iputils y ping
+  command: dpkg-reconfigure iputils-ping
+  when: nagios_plugins_configure.changed
+
+- name: reiniciamos apache2
+  systemd:
+    name: apache2
+    state: restarted
+
+- name: Creamos carpeta githome
+  become_user: nagios
+  file:
+    name: "/home/nagios/githome"
+    state: directory
+
+- name: "Modificamos la pagina por defecto"
+  replace:
+    path: /opt/nagios/share/index.php
+    regexp: "\\$url = 'main.php';"
+    replace: "$url = 'cgi-bin/status.cgi?host=all&servicestatustypes=28&type=detail';"
+    after: "Allow specifying"
+    before: "if"
+
+- name: Permisos al grupo nagios para el servicio nagios
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    insertafter: '^%sudo'
+    regexp: '^%nagios'
+    line: '%nagios ALL=(ALL) NOPASSWD: /bin/systemctl * nagios'
+    validate: visudo -cf %s
+
+- name: Clonamos el repo de nagios
+  become_user: nagios
+  git:
+    repo: https://github.com/aorith/nagios_conf
+    dest: /home/nagios/githome/nagios_conf
+    update: yes
+  register: repo
+
+- name: Ejecutamos el script para actualizar la configuracion
+  become_user: nagios
+  command: ./update
+  args:
+    chdir: "/home/nagios/githome/nagios_conf"
+  notify:
+    - restart nagios
+  when: repo.changed
+
+- name: Copiamos ficheros crontab
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+    force: True
+  with_items:
+    - { src: 'cron.d/nagios_conf', dest: '/etc/cron.d/nagios_conf' }
+
+- name: Dependencias de nagflux
+  apt:
+    name: golang
+    state: latest
+  when: ansible_distribution == 'Debian'
+
+- stat:
+    path: /opt/nagflux/nagflux
+  register: st
+
+- name: Clonamos nagflux
+  become_user: nagios
+  shell: |
+    export GOPATH=$HOME/gorepo
+    mkdir $GOPATH
+    go get -u github.com/griesbacher/nagflux
+  when: not st.stat.exists
+
+- name: Directory for nagflux
+  file:
+    path: /opt/nagflux
+    owner: nagios
+    group: nagios
+    state: directory
+  when: not st.stat.exists
+
+- name: Buildeamos nagflux
+  become_user: nagios
+  shell: |
+    export GOPATH=$HOME/gorepo
+    go build github.com/griesbacher/nagflux
+  args:
+    chdir: /opt/nagflux
+  notify:
+    - restart nagflux
+  when: not st.stat.exists
+
+- name: Copy systemd service for nagflux
+  copy:
+    src: nagflux.service
+    dest: /lib/systemd/system/nagflux.service
+  notify:
+    - restart nagflux
+
+- name: Copy config file for nagflux
+  become_user: nagios
+  copy:
+    src: config.gcfg
+    dest: /opt/nagflux/config.gcfg
+  notify:
+    - restart nagflux
+
+- name: Directory for nagflux perfdata
+  file:
+    path: /opt/nagios/var/spool/nagfluxperfdata
+    owner: nagios
+    group: nagios
+    state: directory
+
+- name: Directory for nagflux perfdata
+  file:
+    path: /opt/nagios/var/nagflux
+    owner: nagios
+    group: nagios
+    state: directory
+

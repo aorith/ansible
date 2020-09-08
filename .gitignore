@@ -1,0 +1,7 @@
+vault
+**/vault
+test-playbooks/*
+tmp/*
+roles/kewlfft.aur
+logs/*
+

@@ -1,0 +1,36 @@
+- name: Añadir repo de backports
+  become: True
+  apt_repository:
+    repo: "deb http://http.debian.net/debian {{ ansible_distribution_release }}-backports main contrib non-free"
+    state: present
+  when: ansible_distribution in ["Debian", "Ubuntu"]
+
+- name: Actualizar cache y paquetes básicos
+  become: True
+  apt:
+    update_cache: yes
+    name:
+      - python-minimal
+      - python-apt
+      - python-pip
+      - apt-transport-https
+      - wget
+      - curl
+      - bc
+      - build-essential
+      - python-pkgconfig
+      - python3-pkgconfig
+    state: latest
+  when: ansible_distribution in ["Debian", "Ubuntu"]
+
+- name: Actualizar los paquetes
+  become: True
+  apt:
+    update_cache: yes
+    upgrade: dist
+  when: ansible_distribution in ["Debian", "Ubuntu"]
+
+- name: Install pip packages
+  become: True
+  pip:
+    name: psutil

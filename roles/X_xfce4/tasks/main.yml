@@ -1,0 +1,20 @@
+- name: xfwm4 compositing
+  xfconf:
+    channel: "xfwm4"
+    property: "/general/use_compositing"
+    value_type: "bool"
+    value: "true"
+
+- name: xfwm4 compositing sync
+  xfconf:
+    channel: "xfwm4"
+    property: "/general/sync_to_vblank"
+    value_type: "bool"
+    value: "true"
+
+- name: xfwm4 cycle in a list
+  xfconf:
+    channel: "xfwm4"
+    property: "/general/cycle_tabwin_mode"
+    value_type: "int"
+    value: "0"

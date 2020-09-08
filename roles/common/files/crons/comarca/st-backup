@@ -1,0 +1,1 @@
+00 03 * * * syncthing /home/syncthing/githome/st-backup/st-backup.py -c /Syncthing/GENERAL/st-backup/config.ini backup >/dev/null 2>&1

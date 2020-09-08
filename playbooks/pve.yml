@@ -1,0 +1,8 @@
+---
+- name: configure system
+  hosts: pve
+  remote_user: "{{ USER }}"
+  become: True
+  roles:
+    - common
+    - snmp

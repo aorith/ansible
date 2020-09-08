@@ -1,0 +1,8 @@
+USER: aorith
+USER_UID: '9999'
+USER_GID: '9999'
+GITHOME: "/home/{{ USER }}/githome"
+
+global_rw_group: "{{ USER_GID }}"
+
+email: "{{ vault_email }}"

@@ -1,0 +1,16 @@
+[Unit]
+Description=Nagflux
+After=network.target local-fs.target
+
+[Service]
+Type=simple
+User=nagios
+Group=nagios
+ExecStart=/opt/nagflux/nagflux -configPath /opt/nagflux/config.gcfg
+ExecStop=/bin/kill -s TERM ${MAINPID}
+ExecReload=/bin/kill -s HUP ${MAINPID}
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

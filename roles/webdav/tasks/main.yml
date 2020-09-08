@@ -1,0 +1,62 @@
+---
+- name: configure apache2 mods
+  command: "{{ item }}"
+  with_items:
+    - a2enmod dav*
+
+- name: copy apache2 site files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0644'
+    force: True
+  with_items:
+    - { src: 'sites-available/webdav.conf', dest: '/etc/apache2/sites-available/webdav.conf' }
+
+- name: variable substitution
+  replace:
+    path: "/etc/apache2/sites-available/webdav.conf"
+    regexp: '<WEBDAV_PATH>'
+    replace: "{{ webdav_path }}"
+
+- name: enable webdav site
+  command: "{{ item }}"
+  with_items:
+    - a2ensite webdav
+
+- name: install pexpect (python module requisite)
+  pip:
+    name: pexpect
+
+- name: check if webdav creds exist
+  stat:
+    path: "{{ htpasswd_path }}"
+  register: stat_result
+
+- name: configure webdav creds
+  when: not stat_result.stat.exists
+  expect:
+    command: htpasswd -c "{{ htpasswd_path }}" "{{ webdav_username }}"
+    responses:
+      (?i)password: "{{ webdav_password }}"
+
+- name: ensure webdav lockdb path exist
+  file:
+    path: "{{ webdav_davlockdb_path }}"
+    owner: "{{ http_user }}"
+    group: "{{ http_user }}"
+    mode: 0755
+    state: directory
+
+- name: add web group to www-data
+  user:
+    name: www-data
+    groups: "{{ global_rw_group }}"
+    append: yes
+
+- name: restart apache2
+  service:
+    name: apache2
+    state: restarted

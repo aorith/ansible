@@ -1,0 +1,28 @@
+---
+- name: Install dhcp-server packages
+  apt:
+    name:
+      - isc-dhcp-server
+    state: latest
+
+- name: Create dhcp symlinks from git repo
+  file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    state: link
+    force: yes
+  loop:
+    - { src: "{{ GITHOME }}/mono.lan/dhcp/dhcpd.conf", dest: "/etc/dhcp/dhcpd.conf" }
+    - { src: "{{ GITHOME }}/mono.lan/dhcp/dhcpd.list", dest: "/etc/dhcp/dhcpd.list" }
+  notify:
+    - restart isc-dhcp-server
+
+- name: Set dhcp to listen in eth0
+  lineinfile:
+    path: /etc/default/isc-dhcp-server
+    regexp: '^INTERFACESv4=""'
+    line: INTERFACESv4="eth0"
+  notify:
+    - restart isc-dhcp-server

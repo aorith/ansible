@@ -1,0 +1,13 @@
+---
+- name: Create githome directory
+  become_user: "{{ username }}"
+  file:
+    name: "{{ GITHOME }}"
+    state: directory
+
+- name: "Cloning {{ repo_url }} to {{ repo_dest }} as user {{ username }}"
+  become_user: "{{ username }}"
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ repo_dest }}"
+    update: yes

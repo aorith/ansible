@@ -1,0 +1,11 @@
+---
+- name: configure system
+  become: True
+  hosts: comarca
+  remote_user: "{{ USER }}"
+  roles:
+    - { role: common }
+    - { role: syncthing }
+#   - { role: webdav }
+#   - { role: fail2ban }
+#   - { role: nrpe }

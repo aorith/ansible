@@ -1,0 +1,3 @@
+# evitamos que pinte como loco el login_monitor tras el log rotate
+58 23 * * * root /bin/systemctl stop login_monitor
+02 00 * * * root /bin/systemctl start login_monitor

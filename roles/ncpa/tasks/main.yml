@@ -1,0 +1,38 @@
+---
+- name: Install NCPA
+  apt:
+    deb: https://assets.nagios.com/downloads/ncpa/ncpa-2.2.2.d10.amd64.deb
+  register: ncpa
+  when: ansible_architecture is not regex("arm*")
+
+- name: Install NCPA on ARM
+  apt:
+    deb: https://assets.nagios.com/downloads/ncpa/ncpa-2.2.1.armhf.deb
+  register: ncpa
+  when: ansible_architecture is regex("arm*")
+
+- name: Activate services
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  with_items:
+      - ncpa_listener
+      - ncpa_passive
+  when: ncpa.changed
+
+- name: Copiamos la config de NCPA
+  copy:
+    src: ncpa.cfg
+    dest: /usr/local/ncpa/etc/ncpa.cfg
+  register: config_file
+
+- name: Reiniciamos ncpa_listener y passive
+  systemd:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - ncpa_listener
+    - ncpa_passive
+  when: config_file.changed
+

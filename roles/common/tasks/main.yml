@@ -1,0 +1,101 @@
+---
+- name: Set timezone to Europe/Madrid
+  timezone:
+    name: Europe/Madrid
+
+- name: update cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 800
+  when: ansible_distribution in ['Debian', 'Ubuntu']
+
+- name: if ubuntu, install software-properties-common
+  package:
+    name:
+      - software-properties-common
+    state: latest
+  when: ansible_distribution == 'Ubuntu'
+
+- name: if ubuntu, add universe repo
+  command: "add-apt-repository universe"
+  when: ansible_distribution == 'Ubuntu'
+
+- name: install common packages
+  package:
+    name:
+      - htop
+      - rsync
+      - dstat
+      - jq
+    state: latest
+
+- name: install required packages for Ubuntu
+  package:
+    name:
+      - python3-pip
+      - python3-setuptools
+    state: latest
+  when: ansible_distribution == 'Ubuntu'
+
+- name: install required packages for Debian
+  package:
+    name:
+      - python-pip
+      - python-setuptools
+    state: latest
+  when: ansible_distribution == 'Debian'
+
+- name: "sshd listens in local network ({{ ansible_default_ipv4.address }})"
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^ListenAddress'
+    insertafter: '^#ListenAddress'
+    line: ListenAddress {{ ansible_default_ipv4.address }}
+  when: ansible_hostname != 'odroid'
+  register: sshdlisten
+
+- name: restart sshd
+  service:
+    name: sshd
+    state: restarted
+  when: sshdlisten.changed
+
+- name: Instalamos acl para poder pasar a usuario no privilegiado
+  apt:
+    name: acl
+    state: present
+  when: ansible_distribution == 'Debian'
+
+- name: Instalamos qemu-guest-agent en las VM
+  apt:
+    name: qemu-guest-agent
+    state: present
+  when:
+    - ansible_distribution == 'Debian'
+    - qemu_agent|default(false)|bool == true
+
+- name: Iniciamos qemu-agent
+  systemd:
+    daemon-reload: yes
+    name: qemu-guest-agent
+    state: started
+  when: qemu_agent|default(false)|bool == true
+
+- name: Copiamos el script pre-reboot.sh (si existe)
+  copy:
+    src: "root/{{ ansible_hostname }}_pre-reboot.sh"
+    dest: /root/pre-reboot.sh
+    owner: root
+    group: root
+    mode: 0774
+  when: "(role_path + '/files/root/' + ansible_hostname + '_pre-reboot.sh') is is_file"
+
+- name: Copiamos los crones (si existen)
+  copy:
+    src: "crons/{{ ansible_hostname }}/"
+    dest: /etc/cron.d
+    owner: root
+    group: root
+    mode: 0644
+  when: "(role_path + '/files/crons/' + ansible_hostname) is is_dir"
+

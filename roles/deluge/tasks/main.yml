@@ -1,0 +1,73 @@
+---
+- name: Dependencies
+  apt:
+    name:
+      - git
+      - build-essential
+      - libssl-dev
+      - libffi-dev
+      - python3-dev
+      - python3-libtorrent
+      - python3-pip
+    state: latest
+
+- name: Install deluge
+  shell: pip3 install deluge
+  register: install_deluge
+
+- name: add deluge user
+  user:
+    name: "deluge"
+    shell: /bin/bash
+    uid: "1110"
+    group: "{{ global_rw_group }}"
+
+- name: Create required folders
+  become_user: deluge
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /MEDIA/torrents
+    - /home/deluge/.config/deluge
+
+- name: install deluge daemon systemd unit file
+  template:
+    src: deluged.service.j2
+    dest: /lib/systemd/system/deluged.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: deluged_service
+
+- name: install deluge web daemon systemd unit file
+  template:
+    src: deluge-web.service.j2
+    dest: /lib/systemd/system/deluge-web.service
+    owner: root
+    group: root
+    mode: '0644'
+  register: delugeweb_service
+
+- name: Copy config file
+  template:
+    src: core.conf.j2
+    dest: /home/deluge/.config/deluge/core.conf
+    owner: deluge
+    group: "{{ global_rw_group }}"
+    mode: '0600'
+
+- name: start deluge daemon
+  systemd:
+    name: "{{ item }}"
+    enabled: true
+    state: restarted
+    daemon_reload: true
+  with_items:
+    - deluged
+    - deluge-web
+  when:
+    - deluged_service.changed
+    - delugeweb_service.changed
+    - install_deluge.changed
+

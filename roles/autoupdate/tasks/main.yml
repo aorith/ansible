@@ -1,0 +1,91 @@
+---
+- name: apt update
+  apt:
+    update-cache: yes
+
+- name: Install aptitude
+  apt:
+    name: aptitude
+    state: present
+
+- name: Comprobamos los que se pueden actualizar
+  apt:
+    upgrade: true
+  check_mode: true
+  register: upgradeable
+  changed_when: false
+
+- name: Mostramos los paquetes a actualizar
+  debug:
+    msg: "{{ upgradeable.stdout_lines }}"
+
+- name: apt upgrade packages
+  apt:
+    name: "*"
+    state: latest
+
+- name: apt dist upgrade
+  apt:
+    autoclean: yes
+    autoremove: yes
+    upgrade: dist
+
+- name: Comprobamos si hace falta reiniciar
+  stat:
+    path: /var/run/reboot-required
+  register: file_reboot
+
+- name: Nagios downtime
+  delegate_to: nagios
+  nagios:
+    action: downtime
+    comment: Actualizando el SO
+    service: all
+    minutes: 15
+    host: "{{ inventory_hostname }}"
+  when:
+    - file_reboot.stat.exists
+    - server_type == 'virtual'
+
+- name: Comprobamos si existe script pre-reinicio
+  stat:
+    path: /root/pre-reboot.sh
+  register: file_prereboot
+
+- name: Ejecutamos script pre-reinicio
+  command: /root/pre-reboot.sh
+  when:
+    - file_prereboot.stat.exists
+    - file_reboot.stat.exists
+    - server_type == 'virtual'
+
+# Wont work on LXC until boot_time_command is available
+#- name: Reiniciamos
+#  reboot:
+#    reboot_timeout: 60
+#    pre_reboot_delay: 10
+#    post_reboot_delay: 5
+#    boot_time_command: 'who -b'
+#  when:
+#    - file_reboot.stat.exists
+#    - server_type == 'virtual'
+#######################################################
+
+- name: Reboot immediately if there was a change.
+  shell: "sleep 5 && reboot"
+  async: 1
+  poll: 0
+  when:
+    - file_reboot.stat.exists
+    - server_type == 'virtual'
+
+- name: Wait for the reboot to complete if there was a change.
+  wait_for_connection:
+    connect_timeout: 20
+    sleep: 5
+    delay: 5
+    timeout: 300
+  when:
+    - file_reboot.stat.exists
+    - server_type == 'virtual'
+

@@ -1,0 +1,14 @@
+- name: install influxdb
+  apt:
+    deb: https://dl.influxdata.com/influxdb/releases/influxdb_1.8.2_amd64.deb
+  when: ansible_distribution == 'Debian'
+  register: influxpkg
+
+- name: start influxdb
+  systemd:
+    name: influxdb
+    state: started
+    enabled: true
+    daemon_reload: true
+  when: influxpkg.changed
+

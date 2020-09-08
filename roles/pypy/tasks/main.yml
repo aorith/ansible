@@ -1,0 +1,21 @@
+---
+- name: "Get pypy{{ pypy_ver }}-{{ pypy_ostype }} and unarchive it"
+  unarchive:
+    src: "https://downloads.python.org/pypy/pypy{{ pypy_ver }}-{{ pypy_ostype }}.tar.bz2"
+    dest: "/opt"
+    remote_src: yes
+    group: 9999
+    creates: "/opt/pypy{{ pypy_ver}}-{{ pypy_ostype }}.tar.bz2"
+  register: pypy_archive
+
+- name: Create symbolic link
+  file:
+    src: "/opt/pypy{{ pypy_ver }}-{{ pypy_ostype }}"
+    dest: "/opt/pypy"
+    state: link
+    force: true
+  when: pypy_archive.changed
+
+- name: Ensure pip is installed
+  shell: /opt/pypy/bin/pypy3 -m ensurepip
+  when: pypy_archive.changed

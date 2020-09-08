@@ -1,0 +1,57 @@
+- name: Instalar paquetes necesarios
+  become: True
+  apt:
+    name:
+      - libxcb-util0-dev
+      - libxcb-keysyms1-dev
+
+- name: Crear directorio de destino
+  become: True
+  file:
+    path: "{{ sxhkd_install_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: "Descargar la versión configurada de sxhkd => {{ sxhkd_ver }}"
+  become: True
+  get_url:
+    url: "{{ sxhkd_url }}"
+    dest: "{{ sxhkd_install_dir }}/sxhkd-{{ sxhkd_ver }}.tar.gz"
+  register: task_download
+
+- name: Descomprimir el tarball
+  become: True
+  unarchive:
+    remote_src: yes
+    src: "{{ sxhkd_install_dir }}/sxhkd-{{ sxhkd_ver }}.tar.gz"
+    dest: "{{ sxhkd_install_dir }}"
+  when: task_download.changed
+  register: task_archive
+
+- name: Ejecutar el make
+  become: True
+  command: make
+  args:
+    chdir: "{{ sxhkd_src_dir }}"
+  register: task_make
+  when: task_archive.changed
+
+- name: "Guardar el log del make => {{ sxhkd_src_dir }}/make_ansible.log"
+  become: True
+  copy:
+    content: "{{ task_make.stdout }}"
+    dest: "{{ sxhkd_src_dir}}/make_ansible.log"
+    remote_src: yes
+  when: task_make.changed
+
+- name: Crear directorio de destino
+  file:
+    path: "{{ ansible_user_dir }}/.local/bin"
+    state: directory
+
+- name: Crear enlace simbólico
+  file:
+    src: "{{ sxhkd_src_dir }}/sxhkd"
+    dest: "{{ ansible_user_dir }}/.local/bin/sxhkd"
+    state: link
+

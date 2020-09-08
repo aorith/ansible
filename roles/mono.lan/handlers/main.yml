@@ -1,0 +1,22 @@
+---
+- name: restart bind9
+  systemd:
+    name: bind9
+    daemon_reload: true
+    enabled: true
+    state: restarted
+
+- name: reload bind9
+  systemd:
+    name: bind9
+    daemon_reload: true
+    enabled: true
+    state: reloaded
+
+- name: restart isc-dhcp-server
+  systemd:
+    name: isc-dhcp-server
+    enabled: true
+    daemon_reload: true
+    state: restarted
+

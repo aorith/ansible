@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+SCRIPTPATH="$( cd "$(dirname "$0")" || exit 1 ; pwd -P )"
+cd "$SCRIPTPATH" || exit 1
+
+[[ ! -d "roles/kewlfft.aur" ]] && ansible-galaxy install kewlfft.aur
+
+if [ -f "playbooks/${HOSTNAME}.yml" ]; then
+    [[ ! -e "$HOME/secret/ansible_vault_pass" ]] && { mkdir -p "$HOME/secret" && touch "$HOME/secret/ansible_vault_pass"; }
+    ansible-playbook "playbooks/${HOSTNAME}.yml" --connection local
+fi
+

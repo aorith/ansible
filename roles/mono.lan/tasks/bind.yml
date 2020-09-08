@@ -1,0 +1,31 @@
+---
+- name: Install bind9 packages
+  apt:
+    name:
+      - bind9
+      - bind9utils
+      - bind9-doc
+
+- name: Set bind9 to only use IPv4 on /etc/default/bind9
+  lineinfile:
+    path: /etc/default/bind9
+    regexp: '^OPTIONS='
+    line: OPTIONS="-u bind -4"
+  notify:
+    - restart bind9
+
+- name: Create bind9 symlinks from git repo
+  file:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    state: link
+    force: yes
+  loop:
+    - { src: "{{ GITHOME }}/mono.lan/bind/named.conf.local", dest: "/etc/bind/named.conf.local" }
+    - { src: "{{ GITHOME }}/mono.lan/bind/named.conf.options", dest: "/etc/bind/named.conf.options" }
+    - { src: "{{ GITHOME }}/mono.lan/bind/db.mono.lan", dest: "/etc/bind/db.mono.lan" }
+  notify:
+    - reload bind9
+
