@@ -6,4 +6,3 @@
   roles:
     - common
     - snmp
-    - ncpa

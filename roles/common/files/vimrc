@@ -1,0 +1,19 @@
+set nocompatible
+
+set encoding=utf-8
+set modeline
+set backspace=2
+syntax enable
+filetype plugin on
+set autoindent
+set tabstop=4 softtabstop=4
+set smarttab
+set expandtab
+set number
+set hlsearch
+set ffs=unix,dos,mac
+set showcmd
+set ruler
+set display+=lastline
+colorscheme desert
+set bg=dark

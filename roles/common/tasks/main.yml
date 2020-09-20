@@ -27,21 +27,18 @@
       - rsync
       - dstat
       - jq
+      - sysstat
+      - bc
     state: latest
-
-- name: install required packages for Ubuntu
-  package:
-    name:
-      - python3-pip
-      - python3-setuptools
-    state: latest
-  when: ansible_distribution == 'Ubuntu'
 
 - name: install required packages for Debian
   package:
     name:
+      - vim-nox
       - python-pip
       - python-setuptools
+      - python3-pip
+      - python3-setuptools
     state: latest
   when: ansible_distribution == 'Debian'
 
@@ -81,6 +78,14 @@
     state: started
   when: qemu_agent|default(false)|bool == true
 
+- name: Copiamos config por defecto para vim
+  copy:
+    src: vimrc
+    dest: "{{ item }}"
+  with_items:
+    - /etc/vimrc
+    - /usr/share/vim/vimrc
+
 - name: Copiamos el script pre-reboot.sh (si existe)
   copy:
     src: "root/{{ ansible_hostname }}_pre-reboot.sh"
@@ -99,3 +104,85 @@
     mode: 0644
   when: "(role_path + '/files/crons/' + ansible_hostname) is is_dir"
 
+- name: Copiamos la unit de tmp en tmpfs
+  copy:
+    remote_src: true
+    src: /usr/share/systemd/tmp.mount
+    dest: /lib/systemd/system/tmp.mount
+  when: ansible_hostname != 'odroid'
+
+- name: Copiamos la unit de /var/log/sysstat tmpfs
+  copy:
+    src: var-log-sysstat.mount
+    dest: /lib/systemd/system/var-log-sysstat.mount
+
+- name: Borramos la anteiror
+  file:
+    path: /lib/systemd/system/sysstat.mount
+    state: absent
+
+- name: Habilitamos las unit de .mount
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  with_items:
+    - tmp.mount
+    - var-log-sysstat.mount
+
+- name: Habilitamos sysstat
+  lineinfile:
+    path: /etc/default/sysstat
+    regexp: '^ENABLED='
+    line: 'ENABLED="true"'
+
+- name: Configuramos /etc/sysstat/sysstat
+  lineinfile:
+    path: /etc/sysstat/sysstat
+    regexp: '^SADC_OPTIONS='
+    line: 'SADC_OPTIONS="-S XALL"'
+
+- name: Configuramos /etc/sysstat/sysstat
+  lineinfile:
+    path: /etc/sysstat/sysstat
+    regexp: '^HISTORY='
+    line: 'HISTORY=2'
+
+- name: Configuramos /etc/cron.d/sysstat
+  lineinfile:
+    path: /etc/cron.d/sysstat
+    regexp: '^1-59'
+    line: '1-59 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1'
+
+- name: Configuramos /etc/cron.d/sysstat
+  lineinfile:
+    path: /etc/cron.d/sysstat
+    regexp: '^5-55/10'
+    line: '#removed 5-55/10 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1'
+
+- name: Configuramos /etc/cron.d/sysstat
+  lineinfile:
+    path: /etc/cron.d/sysstat
+    regexp: '^2-58/2'
+    line: '#removed 5-55/10 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1'
+
+- name: Habilitamos sysstat
+  systemd:
+    name: sysstat
+    state: started
+    enabled: true
+    daemon_reload: true
+
+- name: Deshabilitamos servicios no usamos
+  systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  ignore_errors: true
+  with_items:
+    - nrpe
+    - ncpa_listener
+    - ncpa_passive
+    - zabbix-agent
+    - zabbix-agent2
