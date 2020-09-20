@@ -17,3 +17,6 @@ syncthing_audit_path: "/tmp/syncthing_audit.log"
 
 # snmpd
 device_location: "Under The TV"
+
+# zabbix arm
+zabbit_agent: ''
