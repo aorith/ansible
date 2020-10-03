@@ -4,7 +4,7 @@
   remote_user: "{{ USER }}"
   become: True
   roles:
-#   - { role: common }
+    - { role: common }
 #   - { role: syncthing }
-    - { role: mono.lan, username: "{{ USER }}", repo_url: "git@github.com:aorith/mono.lan.git", repo_dest: "{{ GITHOME }}/mono.lan" }
+#   - { role: mono.lan, username: "{{ USER }}", repo_url: "git@github.com:aorith/mono.lan.git", repo_dest: "{{ GITHOME }}/mono.lan" }
 #   - { role: snmp }

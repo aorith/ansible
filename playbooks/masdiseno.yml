@@ -1,0 +1,8 @@
+---
+- name: configure system
+  hosts: masdiseno
+  remote_user: "{{ USER }}"
+  become: True
+  roles:
+    - { role: common }
+    - { role: snmp }

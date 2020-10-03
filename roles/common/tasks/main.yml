@@ -63,6 +63,15 @@
     state: present
   when: ansible_distribution == 'Debian'
 
+- name: Modificamos el swapiness
+  sysctl:
+    name: vm.swappiness
+    value: 5
+    state: present
+    reload: yes
+    sysctl_set: yes
+  when: ansible_hostname in ['pve', 'rohan']
+
 - name: Instalamos qemu-guest-agent en las VM
   apt:
     name: qemu-guest-agent
@@ -116,11 +125,6 @@
     src: var-log-sysstat.mount
     dest: /lib/systemd/system/var-log-sysstat.mount
 
-- name: Borramos la anteiror
-  file:
-    path: /lib/systemd/system/sysstat.mount
-    state: absent
-
 - name: Habilitamos las unit de .mount
   systemd:
     name: "{{ item }}"
@@ -131,41 +135,23 @@
     - tmp.mount
     - var-log-sysstat.mount
 
-- name: Habilitamos sysstat
+- name: Deshabilitamos sysstat
   lineinfile:
     path: /etc/default/sysstat
     regexp: '^ENABLED='
-    line: 'ENABLED="true"'
+    line: 'ENABLED="false"'
 
-- name: Configuramos /etc/sysstat/sysstat
-  lineinfile:
-    path: /etc/sysstat/sysstat
-    regexp: '^SADC_OPTIONS='
-    line: 'SADC_OPTIONS="-S XALL"'
+#- name: Configuramos /etc/sysstat/sysstat
+# lineinfile:
+#   path: /etc/sysstat/sysstat
+#   regexp: '^SADC_OPTIONS='
+#   line: 'SADC_OPTIONS="-S XALL"'
 
 - name: Configuramos /etc/sysstat/sysstat
   lineinfile:
     path: /etc/sysstat/sysstat
     regexp: '^HISTORY='
     line: 'HISTORY=2'
-
-- name: Configuramos /etc/cron.d/sysstat
-  lineinfile:
-    path: /etc/cron.d/sysstat
-    regexp: '^1-59'
-    line: '1-59 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1'
-
-- name: Configuramos /etc/cron.d/sysstat
-  lineinfile:
-    path: /etc/cron.d/sysstat
-    regexp: '^5-55/10'
-    line: '#removed 5-55/10 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1'
-
-- name: Configuramos /etc/cron.d/sysstat
-  lineinfile:
-    path: /etc/cron.d/sysstat
-    regexp: '^2-58/2'
-    line: '#removed 5-55/10 * * * * root command -v debian-sa1 > /dev/null && debian-sa1 1 1'
 
 - name: Habilitamos sysstat
   systemd:
@@ -174,15 +160,33 @@
     enabled: true
     daemon_reload: true
 
-- name: Deshabilitamos servicios no usamos
+- name: Modificamos capacidad de journald
+  blockinfile:
+    path: /etc/systemd/journald.conf
+    block: |
+      Storage=volatile
+      RuntimeMaxUse=20M
+      ForwardToSyslog=no
+    insertafter: '[Journal]'
+  register: jcfg
+  when:
+    - server_type == 'virtual'
+
+- name: Restart journald
   systemd:
-    name: "{{ item }}"
-    state: stopped
-    enabled: false
-  ignore_errors: true
-  with_items:
-    - nrpe
-    - ncpa_listener
-    - ncpa_passive
-    - zabbix-agent
-    - zabbix-agent2
+    name: systemd-journald
+    state: restarted
+  when: jcfg.changed
+
+#- name: Deshabilitamos servicios no usamos
+#  systemd:
+#    name: "{{ item }}"
+#    state: stopped
+#    enabled: false
+#  ignore_errors: true
+#  with_items:
+#    - nrpe
+#    - ncpa_listener
+#    - ncpa_passive
+#    - zabbix-agent
+#    - zabbix-agent2
