@@ -8,6 +8,5 @@
 #   - nrpe
 #   - snmp
 #   - nagios
-#   - influxdb
+    - influxdb
 #   - grafana
-    - ncpa
