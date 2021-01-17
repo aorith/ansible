@@ -3,9 +3,18 @@
   become: True
   hosts: comarca
   remote_user: "{{ USER }}"
+  pre_tasks:
+    - name: add syncthing user
+      user:
+        name: "{{ syncthing_user }}"
+        shell: /bin/bash
+        uid: "{{ syncthing_uid }}"
+        group: "{{ syncthing_group }}"
+
   roles:
     - { role: common }
     - { role: syncthing }
-#   - { role: webdav }
-#   - { role: fail2ban }
-#   - { role: nrpe }
+    - { role: githome, username: "{{ syncthing_user }}", repo_url: "https://github.com/aorith/st-backup.git", repo_dest: "/home/{{ syncthing_user }}/githome/st-backup" }
+    - { role: webdav }
+    - { role: fail2ban }
+    - { role: snmp }

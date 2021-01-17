@@ -1,3 +1,0 @@
----
-dependencies:
-  - { role: githome, username: "{{ syncthing_user }}", repo_url: "https://github.com/aorith/st-backup.git", repo_dest: "https://github.com/aorith/st-backup.git" }

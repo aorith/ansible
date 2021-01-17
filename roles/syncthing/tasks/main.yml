@@ -1,11 +1,4 @@
 ---
-- name: add syncthing user
-  user:
-    name: "{{ syncthing_user }}"
-    shell: /bin/bash
-    uid: "{{ syncthing_uid }}"
-    group: "{{ syncthing_group }}"
-
 - name: Add an Apt signing key for syncthing
   apt_key:
     url: https://syncthing.net/release-key.txt
