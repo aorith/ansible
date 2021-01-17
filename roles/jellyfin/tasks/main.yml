@@ -1,0 +1,55 @@
+---
+- name: Ensure contrib and non-free are active
+  apt_repository:
+    repo: "deb http://deb.debian.org/debian/ {{ ansible_distribution_release }} main contrib non-free"
+    state: present
+
+- name: Add jellyfin repo key
+  apt_key:
+    url: "https://repo.jellyfin.org/debian/jellyfin_team.gpg.key"
+    state: present
+
+- name: Add jellyfins repo
+  apt_repository:
+    repo: "deb [arch=amd64] https://repo.jellyfin.org/debian {{ ansible_distribution_release }} main"
+    state: present
+
+- name: Required packages
+  apt:
+    pkg:
+      - apt-transport-https
+      - gnupg
+      - lsb-release
+      - jellyfin
+      - ffmpeg
+    update_cache: yes
+
+- name: Override environment file for jellyfin
+  copy:
+    src: jellyfin.environment
+    dest: /etc/default/jellyfin.environment
+
+- name: Override systemd unit for jellyfin
+  copy:
+    src: jellyfin.service.conf
+    dest: /etc/systemd/system/jellyfin.service.d/jellyfin.service.conf
+
+- name: Fix permissions
+  shell: |
+    chown -R aorith: /var/lib/jellyfin
+    chown -R aorith: /var/log/jellyfin
+    chown -R aorith: /var/cache/jellyfin
+    chown -R aorith: /DATA/configs/jellyfin
+
+- name: Add jellyfin group
+  user:
+    name: aorith
+    groups: jellyfin
+    append: yes
+
+- name: Reload systemd and restart jellyfin
+  systemd:
+    name: jellyfin
+    state: restarted
+    daemon_reload: yes
+
