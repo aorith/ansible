@@ -178,15 +178,3 @@
     state: restarted
   when: jcfg.changed
 
-#- name: Deshabilitamos servicios no usamos
-#  systemd:
-#    name: "{{ item }}"
-#    state: stopped
-#    enabled: false
-#  ignore_errors: true
-#  with_items:
-#    - nrpe
-#    - ncpa_listener
-#    - ncpa_passive
-#    - zabbix-agent
-#    - zabbix-agent2
