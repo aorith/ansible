@@ -1,0 +1,4 @@
+# vim: ft=crontab
+
+# drop caches on vm's
+06 00 * * * root /bin/echo 3 > /proc/sys/vm/drop_caches
