@@ -178,3 +178,4 @@
     state: restarted
   when: jcfg.changed
 
+- include: locale.yml
