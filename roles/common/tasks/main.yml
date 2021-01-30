@@ -172,6 +172,28 @@
   when:
     - server_type == 'virtual'
 
+- name: Customize bash
+  blockinfile:
+    path: /etc/bash.bashrc
+    block: |
+      alias ls='ls --color=auto'
+      alias dir='dir --color=auto'
+      alias vdir='vdir --color=auto'
+      alias grep='grep --color=auto'
+      alias fgrep='fgrep --color=auto'
+      alias egrep='egrep --color=auto'
+
+      if [ $UID -ne 0 ]; then
+          alias sudo='sudo ' # passes aliases over to root when using sudo
+      fi
+
+      shopt -s checkwinsize
+      alias ls='ls -hF --color=auto --group-directories-first'
+      alias la='ls -A'
+      alias ll='ls -lh'
+      alias l='ls -alh'
+      alias lr='ls -R'
+
 - name: Restart journald
   systemd:
     name: systemd-journald
