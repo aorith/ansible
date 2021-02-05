@@ -1,7 +1,7 @@
-- name: Ensure localisation files for 'en_US.UTF-8' are available
+- name: "Ensure localisation files for 'en_US.UTF-8' are available"
   locale_gen:
     name: "en_US.UTF-8"
     state: present
 
-- name: Configure locale to 'C' and language to 'en_US.UTF-8'
-  command: localectl set-locale LANG=C LANGUAGE=en_US.UTF-8
+- name: Configure locales
+  command: localectl set-locale LANG="C.UTF-8" LC_COLLATE=C LC_CTYPE=C LANGUAGE="en_US.UTF-8"
