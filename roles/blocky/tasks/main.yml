@@ -1,0 +1,66 @@
+---
+- name: Determine system's architecture (armv7)
+  set_fact:
+    sys_arch: "armv7"
+  when: '"armv7" in ansible_architecture'
+
+- name: Determine system's architecture (arm64)
+  set_fact:
+    sys_arch: "arm64"
+  when: '"arm64" in ansible_architecture'
+
+- name: Check if 'sys_arch' is defined
+  assert:
+    that:
+      - sys_arch is defined
+    fail_msg: "Architecture ' {{ansible_architecture}} ' is not implemented."
+    success_msg: "Architecture ' {{ansible_architecture}} ' is implemented."
+
+- name: Create temporary directory
+  file:
+    path: "/tmp/blocky"
+    state: directory
+
+- name: Download and unarchive blocky binary
+  unarchive:
+    src: "https://github.com/0xERR0R/blocky/releases/download/v{{ blocky_version }}/blocky_{{ blocky_version }}_Linux_{{ sys_arch }}.tar.gz"
+    dest: /tmp/blocky
+    remote_src: yes
+
+- name: Move the binary to /usr/local/bin
+  copy:
+    src: /tmp/blocky/blocky
+    dest: /usr/local/bin/blocky
+    mode: '0755'
+    owner: root
+    group: root
+    remote_src: yes
+
+- name: Set Capabilities of the binary to bind to priviledged ports
+  command: setcap 'cap_net_bind_service=+ep' /usr/local/bin/blocky
+
+- name: Delete temporary directory
+  file:
+    path: "/tmp/blocky"
+    state: absent
+
+- name: Copy blocky configuration file
+  copy:
+    src: config.yml
+    dest: "/home/{{ USER }}/.config/blocky.yml"
+    owner: "{{ USER }}"
+
+- name: Install systemd unit
+  template:
+    src: blocky.service.j2
+    dest: /etc/systemd/system/blocky.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Enable and start
+  systemd:
+    name: blocky
+    daemon_reload: yes
+    state: restarted
+    enabled: yes

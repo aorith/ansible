@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+SCRIPTPATH="$( cd "$(dirname "$0")" || exit 1 ; pwd -P )"
+cd "$SCRIPTPATH" || exit 1
+
+ansible-galaxy install -r requirements.yml --force
+ansible-playbook playbooks/blocky.yml --limit 'pi odroid'

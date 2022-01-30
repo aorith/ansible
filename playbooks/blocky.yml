@@ -1,5 +1,6 @@
 ---
 - name: configure system
+  serial: 1  # one at a time
   become: True
   hosts: all
   remote_user: "{{ USER }}"

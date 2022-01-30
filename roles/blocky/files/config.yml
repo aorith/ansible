@@ -1,0 +1,53 @@
+port: 53
+logLevel: warn
+
+upstream:
+  default:
+    - 8.8.8.8
+    - 8.8.4.4
+    - 1.1.1.1
+    - 9.9.9.9
+  moria*:
+    - 8.8.8.8
+    - 8.8.4.4
+
+caching:
+  maxTime: 5m
+
+customDNS:
+  mapping:
+    odroid: 192.168.1.5
+    odroid.mono.lan: 192.168.1.5
+
+    bree: 192.168.1.5
+    bree.mono.lan: 192.168.1.5
+
+    pi: 192.168.1.8
+    pi.mono.lan: 192.168.1.8
+
+    trantor: 192.168.1.7
+    trantor.mono.lan: 192.168.1.7
+
+    comarca: 192.168.1.7
+    comarca.mono.lan: 192.168.1.7
+
+    alpine: 192.168.1.50
+    alpine.mono.lan: 192.168.1.50
+
+    edgeserver-vm1: 192.168.1.57
+
+blocking:
+  blackLists:
+    ads:
+      - https://s3.amazonaws.com/lists.disconnect.me/simple_ad.txt
+      - https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/gambling/hosts
+      - https://raw.githubusercontent.com/kboghdady/youTube_ads_4_pi-hole/master/youtubelist.txt
+    apple:
+      - |
+        ocsp.apple.com
+  clientGroupsBlock:
+    default:
+      - ads
+    moria*:
+      - apple
+
