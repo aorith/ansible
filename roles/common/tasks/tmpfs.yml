@@ -1,0 +1,22 @@
+- name: Copiamos la unit de tmp en tmpfs
+  copy:
+    remote_src: true
+    src: /usr/share/systemd/tmp.mount
+    dest: /lib/systemd/system/tmp.mount
+  when:
+    - ansible_hostname != 'odroid'
+
+- name: Copiamos la unit de /var/log/sysstat tmpfs
+  copy:
+    src: var-log-sysstat.mount
+    dest: /lib/systemd/system/var-log-sysstat.mount
+
+- name: Habilitamos las unit de .mount
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  with_items:
+    - tmp.mount
+    - var-log-sysstat.mount

@@ -35,8 +35,6 @@
   package:
     name:
       - vim-nox
-      - python-pip
-      - python-setuptools
       - python3-pip
       - python3-setuptools
     state: latest
@@ -48,7 +46,9 @@
     regexp: '^ListenAddress'
     insertafter: '^#ListenAddress'
     line: ListenAddress {{ ansible_default_ipv4.address }}
-  when: ansible_hostname != 'odroid'
+  when:
+    - ansible_hostname != 'odroid'
+    - ansible_distribution == 'Deshabilitado'
   register: sshdlisten
 
 - name: restart sshd
@@ -63,14 +63,16 @@
     state: present
   when: ansible_distribution == 'Debian'
 
-- name: Modificamos el swapiness
+- name: Modificamos el swappiness
   sysctl:
     name: vm.swappiness
-    value: 5
+    value: {{ swappiness.value }}
     state: present
     reload: yes
     sysctl_set: yes
-  when: ansible_hostname in ['pve', 'rohan']
+  when:
+    - swapiness.value is defined
+    - ansible_hostname in ['pve', 'rohan']
 
 - name: Instalamos qemu-guest-agent en las VM
   apt:
@@ -98,7 +100,7 @@
 - name: Copiamos el script pre-reboot.sh (si existe)
   copy:
     src: "root/{{ ansible_hostname }}_pre-reboot.sh"
-    dest: /root/pre-reboot.sh
+    dest: /usr/local/bin/pre-reboot.sh
     owner: root
     group: root
     mode: 0774
@@ -113,52 +115,13 @@
     mode: 0644
   when: "(role_path + '/files/crons/' + ansible_hostname) is is_dir"
 
-- name: Copiamos la unit de tmp en tmpfs
-  copy:
-    remote_src: true
-    src: /usr/share/systemd/tmp.mount
-    dest: /lib/systemd/system/tmp.mount
-  when: ansible_hostname != 'odroid'
+- include: tmpfs.yml
+  when:
+    - ansible_distribution == 'Deshabilitado'
 
-- name: Copiamos la unit de /var/log/sysstat tmpfs
-  copy:
-    src: var-log-sysstat.mount
-    dest: /lib/systemd/system/var-log-sysstat.mount
-
-- name: Habilitamos las unit de .mount
-  systemd:
-    name: "{{ item }}"
-    state: started
-    enabled: true
-    daemon_reload: true
-  with_items:
-    - tmp.mount
-    - var-log-sysstat.mount
-
-- name: Deshabilitamos sysstat
-  lineinfile:
-    path: /etc/default/sysstat
-    regexp: '^ENABLED='
-    line: 'ENABLED="false"'
-
-#- name: Configuramos /etc/sysstat/sysstat
-# lineinfile:
-#   path: /etc/sysstat/sysstat
-#   regexp: '^SADC_OPTIONS='
-#   line: 'SADC_OPTIONS="-S XALL"'
-
-- name: Configuramos /etc/sysstat/sysstat
-  lineinfile:
-    path: /etc/sysstat/sysstat
-    regexp: '^HISTORY='
-    line: 'HISTORY=2'
-
-- name: Habilitamos sysstat
-  systemd:
-    name: sysstat
-    state: started
-    enabled: true
-    daemon_reload: true
+- include: sysstat.yml
+  when:
+    - ansible_distribution == 'Deshabilitado'
 
 - name: Modificamos capacidad de journald
   blockinfile:
@@ -171,6 +134,12 @@
   register: jcfg
   when:
     - server_type == 'virtual'
+
+- name: Restart journald
+  systemd:
+    name: systemd-journald
+    state: restarted
+  when: jcfg.changed
 
 - name: Customize bash
   blockinfile:
@@ -193,11 +162,5 @@
       alias ll='ls -lh'
       alias l='ls -alh'
       alias lr='ls -R'
-
-- name: Restart journald
-  systemd:
-    name: systemd-journald
-    state: restarted
-  when: jcfg.changed
 
 - include: locale.yml

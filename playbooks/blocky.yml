@@ -1,0 +1,7 @@
+---
+- name: configure system
+  become: True
+  hosts: all
+  remote_user: "{{ USER }}"
+  roles:
+    - blocky

@@ -1,5 +1,7 @@
+# vim: ft=crontab
+
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 ANSIBLE_CONFIG=/home/aorith/githome/ansible/ansible.cfg
 
-30 05 * * * aorith /usr/bin/ansible-playbook /home/aorith/githome/ansible/playbooks/random_update.yml >/dev/null 2>&1
+# 30 05 * * * aorith /usr/bin/ansible-playbook /home/aorith/githome/ansible/playbooks/random_update.yml >/dev/null 2>&1
